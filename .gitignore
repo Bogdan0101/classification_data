@@ -1,0 +1,7 @@
+.venv
+venv
+.env
+__pycache__/
+.idea/
+*.csv
+!input_requests.csv
