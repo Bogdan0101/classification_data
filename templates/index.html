@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Request Classifier</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; color: #333; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .upload-card { background: #eef2f7; padding: 20px; border-radius: 6px; margin-bottom: 25px; border: 1px dashed #4a90e2; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: #f8f9fa; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    .high { background-color: #f8d7da; color: #721c24; }
+    .medium { background-color: #fff3cd; color: #856404; }
+    .low { background-color: #d4edda; color: #155724; }
+    pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🚀 AI Класифікатор Вхідних Запитів</h2>
+
+  <!-- Форма вибору та відправки CSV -->
+  <div class="upload-card">
+    <form action="/classify-csv" method="post" enctype="multipart/form-data">
+      <label for="file"><b>Оберіть CSV файл для класифікації:</b></label><br><br>
+      <input type="file" id="file" name="file" accept=".csv" required>
+      <button type="submit" style="padding: 8px 18px; font-weight: bold; cursor: pointer;">
+        Обробити через Gemini LLM
+      </button>
+    </form>
+  </div>
+
+  <!-- Якщо є результати від сервера, виводимо статистику та таблицю -->
+  {% if results %}
+  <hr>
+  <h3>📊 Агрегований звіт</h3>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h4>По категоріях:</h4>
+      <ul>
+        {% for cat, count in stats.by_category.items() %}
+        <li><b>{{ cat }}:</b> {{ count }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="stat-card">
+      <h4>По пріоритету:</h4>
+      <ul>
+        {% for prio, count in stats.by_priority.items() %}
+        <li><b>{{ prio }}:</b> {{ count }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="stat-card">
+      <h4>По відділах:</h4>
+      <ul>
+        {% for dept, count in stats.by_department.items() %}
+        <li><b>{{ dept }}:</b> {{ count }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <p>⚠️ <b>Потребують уточнення:</b> {{ stats.needs_clarification_count }} запитів</p>
+
+  <h3>📋 Повний список класифікованих запитів</h3>
+  <table>
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Канал</th>
+      <th>Суть запиту</th>
+      <th>Категорія</th>
+      <th>Відділ</th>
+      <th>Пріоритет</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in results %}
+    <tr>
+      <td><code>{{ item.get('id', '-') }}</code></td>
+      <td>{{ item.get('channel', '-') }}</td>
+      <td>{{ item.get('short_summary', '-') }}</td>
+      <td><b>{{ item.get('category', '-') }}</b></td>
+      <td>{{ item.get('target_department') or '-' }}</td>
+      <td>
+        <span class="badge {{ item.get('priority', 'low') }}">
+          {{ item.get('priority', '-') }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>📄 Згенерований Markdown Report (report.md)</h3>
+  <pre><code>{{ markdown_report }}</code></pre>
+  <div>
+    <a href="/download/report-csv" class="btn btn-success">
+      📥 Завантажити CSV звіт
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+</body>
+</html>
