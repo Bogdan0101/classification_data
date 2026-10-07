@@ -1,31 +1,21 @@
 import asyncio
 from app.services.llm import request_gemini_async
-from typing import List, Dict, Any
+from typing import List
+from app.schemas import RowSchema, LLMResponseSchema, ResultSchema
 
 
-async def process_csv(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+async def process_csv(records: List[RowSchema]) -> List[ResultSchema]:
     semaphore = asyncio.Semaphore(value=1)
 
-    async def worker(record: Dict[str, Any]) -> Dict[str, Any]:
+    async def worker(record: RowSchema) -> ResultSchema:
         async with semaphore:
-            raw_text = str(record.get("raw_text", ""))
+            raw_text = record.raw_text
             max_retries = 4
-            llm_data = {
-                "category": "out_of_scope",
-                "priority": "low",
-                "target_department": "unassigned",
-                "short_summary": "None",
-                "needs_clarification": True,
-                "clarification_reason": "None",
-            }
+            llm_data = LLMResponseSchema().model_dump()
             for attempt in range(max_retries):
                 try:
                     llm_response = await request_gemini_async(raw_text)
-                    data_dict = llm_response.model_dump()
-                    for key in ["category", "priority", "target_department"]:
-                        if hasattr(data_dict.get(key), "value"):
-                            data_dict[key] = data_dict[key].value
-                    llm_data = data_dict
+                    llm_data = llm_response.model_dump(mode="json")
                     break
                 except Exception as e:
                     err_message = str(e)
@@ -45,7 +35,9 @@ async def process_csv(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         llm_data["clarification_reason"] = err_message
                         break
             await asyncio.sleep(2)
-            return {**record, **llm_data}
+
+            row_dict = {**record.model_dump(mode="json"), **llm_data}
+            return ResultSchema.model_validate(row_dict)
 
     tasks = [worker(record) for record in records]
     results = await asyncio.gather(*tasks)

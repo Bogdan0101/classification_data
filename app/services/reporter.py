@@ -1,16 +1,12 @@
 import json
 from typing import List, Dict, Any
 import pandas as pd
+from app.schemas import ResultSchema
 
 
-def generate_reports(results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    clean_results = []
-    for result in results:
-        item = result.copy()
-        for key in ["category", "priority", "target_department"]:
-            if hasattr(item.get(key), "value"):
-                item[key] = item[key].value
-        clean_results.append(item)
+def generate_reports(results: List[ResultSchema]) -> Dict[str, Any]:
+    clean_results = [result.model_dump(mode="json") for result in results]
+
     output_json_str = json.dumps(clean_results, ensure_ascii=False, indent=2)
 
     df = pd.DataFrame(clean_results)
@@ -21,10 +17,15 @@ def generate_reports(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         df["target_department"].fillna("unassigned").value_counts().to_dict()
     )
 
-    needs_clarification_df = df[df["needs_clarification"]]
-    clarification_list = needs_clarification_df[
-        ["id", "short_summary", "clarification_reason"]
-    ].to_dict(orient="records")
+    clarification_list = [
+        {
+            "id": result.id,
+            "short_summary": result.short_summary,
+            "clarification_reason": result.clarification_reason or "-",
+        }
+        for result in results
+        if result.needs_clarification
+    ]
     clarification_list_count = len(clarification_list)
 
     cat_md = (

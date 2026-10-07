@@ -83,14 +83,14 @@
     <tbody>
     {% for item in results %}
     <tr>
-      <td><code>{{ item.get('id', '-') }}</code></td>
-      <td>{{ item.get('channel', '-') }}</td>
-      <td>{{ item.get('short_summary', '-') }}</td>
-      <td><b>{{ item.get('category', '-') }}</b></td>
-      <td>{{ item.get('target_department') or '-' }}</td>
+      <td><code>{{ item.id or '-' }}</code></td>
+      <td>{{ item.channel.value if item.channel else '-' }}</td>
+      <td>{{ item.short_summary or '-' }}</td>
+      <td><b>{{ item.category or '-' }}</b></td>
+      <td>{{ item.target_department or '-' }}</td>
       <td>
-        <span class="badge {{ item.get('priority', 'low') }}">
-          {{ item.get('priority', '-') }}
+        <span class="badge {{ item.priority or 'low' }}">
+          {{ item.priority or '-' }}
         </span>
       </td>
     </tr>
