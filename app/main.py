@@ -3,16 +3,17 @@ import csv
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from typing import List, Dict, Any
+from typing import List
 import io
 import pandas as pd
 from app.services.processor import process_csv
 from app.services.reporter import generate_reports
+from app.schemas import RowSchema, ResultSchema
 
 app = FastAPI(title="classification data FastAPI")
 templates = Jinja2Templates(directory="templates")
 
-RESULTS_CSV_FILE: List[Dict[str, Any]] = []
+RESULTS_CSV_FILE: List[ResultSchema] = []
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -33,20 +34,21 @@ async def classify_csv(request: Request, file: UploadFile = File(...)):
     global RESULTS_CSV_FILE
     if not file.filename.endswith(".csv"):
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="File must end with .csv",
         )
     try:
         content = await file.read()
         df = pd.read_csv(io.BytesIO(content))
         records = df.to_dict(orient="records")
+        validated_records = [RowSchema.model_validate(row) for row in records]
     except Exception as err:
         raise HTTPException(
             status_code=400,
             detail=f"File failed to load. Error: {err}",
         )
 
-    results = await process_csv(records)
+    results = await process_csv(validated_records)
     reports = generate_reports(results)
     RESULTS_CSV_FILE = results
     return templates.TemplateResponse(
@@ -64,7 +66,7 @@ async def classify_csv(request: Request, file: UploadFile = File(...)):
 async def download_report_csv():
     if not RESULTS_CSV_FILE:
         raise HTTPException(
-            status_code=400,
+            status_code=404,
             detail="No results CSV file.",
         )
     output = io.StringIO()
@@ -83,16 +85,17 @@ async def download_report_csv():
         ]
     )
     for item in RESULTS_CSV_FILE:
+        item_dict = item.model_dump(mode="json")
         writer.writerow(
             [
-                item.get("id", "-"),
-                item.get("channel", "-"),
-                item.get("short_summary", "-"),
-                item.get("category", "-"),
-                item.get("target_department", "-"),
-                item.get("priority", "-"),
-                item.get("needs_clarification", "-"),
-                item.get("clarification_reason", "-"),
+                item_dict.get("id") or "-",
+                item_dict.get("channel") or "-",
+                item_dict.get("short_summary") or "-",
+                item_dict.get("category") or "-",
+                item_dict.get("target_department") or "-",
+                item_dict.get("priority") or "-",
+                str(item_dict.get("needs_clarification", False)),
+                item_dict.get("clarification_reason") or "-",
             ]
         )
     output.seek(0)
