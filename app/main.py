@@ -72,32 +72,9 @@ async def download_report_csv():
     output = io.StringIO()
     writer = csv.writer(output)
 
-    writer.writerow(
-        [
-            "id",
-            "channel",
-            "short_summary",
-            "category",
-            "target_department",
-            "priority",
-            "needs_clarification",
-            "clarification_reason",
-        ]
-    )
+    writer.writerow(ResultSchema.get_fields_name())
     for item in RESULTS_CSV_FILE:
-        item_dict = item.model_dump(mode="json")
-        writer.writerow(
-            [
-                item_dict.get("id") or "-",
-                item_dict.get("channel") or "-",
-                item_dict.get("short_summary") or "-",
-                item_dict.get("category") or "-",
-                item_dict.get("target_department") or "-",
-                item_dict.get("priority") or "-",
-                str(item_dict.get("needs_clarification", False)),
-                item_dict.get("clarification_reason") or "-",
-            ]
-        )
+        writer.writerow(item.get_fields_value())
     output.seek(0)
 
     return StreamingResponse(

@@ -11,7 +11,7 @@ class ChannelEnum(str, Enum):
 
 
 class RowSchema(BaseModel):
-    id: str   # noqa: VNE003
+    id: str  # noqa: VNE003
     channel: Optional[ChannelEnum] = Field(default=None, description="channel")
     timestamp: datetime
     raw_text: str
@@ -27,7 +27,20 @@ class LLMResponseSchema(BaseModel):
 
 
 class ResultSchema(RowSchema, LLMResponseSchema):
-    pass
+    @classmethod
+    def get_fields_name(cls) -> list[str]:
+        return list(cls.model_fields.keys())
+
+    def get_fields_value(self) -> list[str]:
+        values = []
+        for _, value in self:
+            if value is None:
+                values.append("-")
+            elif isinstance(value, Enum):
+                values.append(value.value)
+            else:
+                values.append(str(value))
+        return values
 
 
 class CategoryEnum(str, Enum):
