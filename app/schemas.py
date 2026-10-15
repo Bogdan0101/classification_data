@@ -26,7 +26,16 @@ class LLMResponseSchema(BaseModel):
     clarification_reason: Optional[str] = "None"
 
 
-class ResultSchema(RowSchema, LLMResponseSchema):
+class ResultSchema(BaseModel):
+    id: str  # noqa: VNE003
+    channel: Optional[ChannelEnum] = Field(default=None, description="channel")
+    short_summary: str = "None"
+    category: str = "out_of_scope"
+    target_department: Optional[str] = "unassigned"
+    priority: str = "low"
+    needs_clarification: bool = True
+    clarification_reason: Optional[str] = "None"
+
     @classmethod
     def get_fields_name(cls) -> list[str]:
         return list(cls.model_fields.keys())
