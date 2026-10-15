@@ -1,11 +1,15 @@
 import csv
+import io
+import pandas as pd
 
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from typing import List
-import io
-import pandas as pd
+
+from pandas.errors import EmptyDataError, ParserError
+from pydantic import ValidationError
+
 from app.services.processor import process_csv
 from app.services.reporter import generate_reports
 from app.schemas import RowSchema, ResultSchema
@@ -32,20 +36,39 @@ async def root(request: Request):
 @app.post("/classify-csv", response_class=HTMLResponse)
 async def classify_csv(request: Request, file: UploadFile = File(...)):
     global RESULTS_CSV_FILE
+
     if not file.filename.endswith(".csv"):
         raise HTTPException(
             status_code=422,
             detail="File must end with .csv",
         )
+
     try:
         content = await file.read()
         df = pd.read_csv(io.BytesIO(content))
         records = df.to_dict(orient="records")
-        validated_records = [RowSchema.model_validate(row) for row in records]
-    except Exception as err:
+    except (EmptyDataError, ParserError) as e:
         raise HTTPException(
-            status_code=400,
-            detail=f"File failed to load. Error: {err}",
+            status_code=422,
+            detail=f"Invalid CSV structure or empty file: {e}",
+        )
+    except UnicodeDecodeError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"File encoding error (use UTF-8): {e}",
+        )
+    except (IOError, OSError) as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Server failed to read uploaded file due to an I/O error: {e}",
+        )
+
+    try:
+        validated_records = [RowSchema.model_validate(row) for row in records]
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Pydantic validation error {str(e)}",
         )
 
     results = await process_csv(validated_records)
