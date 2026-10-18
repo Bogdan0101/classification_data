@@ -10,8 +10,8 @@ from typing import List
 from pandas.errors import EmptyDataError, ParserError
 from pydantic import ValidationError
 
-from app.services.processor import process_csv
-from app.services.reporter import generate_reports
+from app.services.processor import ProcessorCSV
+from app.services.reporter import Reporter
 from app.schemas import RowSchema, ResultSchema
 
 app = FastAPI(title="classification data FastAPI")
@@ -36,6 +36,8 @@ async def root(request: Request):
 @app.post("/classify-csv", response_class=HTMLResponse)
 async def classify_csv(request: Request, file: UploadFile = File(...)):
     global RESULTS_CSV_FILE
+    processor = ProcessorCSV()
+    reporter = Reporter()
 
     if not file.filename.endswith(".csv"):
         raise HTTPException(
@@ -71,8 +73,9 @@ async def classify_csv(request: Request, file: UploadFile = File(...)):
             detail=f"Pydantic validation error {str(e)}",
         )
 
-    results = await process_csv(validated_records)
-    reports = generate_reports(results)
+    results = await processor.run_process_csv(validated_records)
+    reports = reporter.generate_reports(results)
+
     RESULTS_CSV_FILE = results
     return templates.TemplateResponse(
         request=request,
