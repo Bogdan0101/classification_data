@@ -6,15 +6,14 @@ from google.genai import types
 from app.config import settings
 from app.schemas import LLMClassificationResponse
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
-model_llm = settings.GEMINI_MODEL
-gemini_semaphore = asyncio.Semaphore(value=1)
-
 
 class RequestGemini:
+    def __init__(self):
+        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self.model_llm = settings.GEMINI_MODEL
+        self.gemini_semaphore = asyncio.Semaphore(value=1)
 
-    @staticmethod
-    async def async_request(raw_text) -> LLMClassificationResponse:
+    async def async_request(self, raw_text) -> LLMClassificationResponse:
         system_instruction = (
             "You are an AI System Analyst. "
             "Analyze the incoming request from internal team "
@@ -22,11 +21,11 @@ class RequestGemini:
             "to the provided Pydantic schema."
         )
         max_retries = 4
-        async with gemini_semaphore:
+        async with self.gemini_semaphore:
             for attempt in range(max_retries):
                 try:
-                    response = await client.aio.models.generate_content(
-                        model=model_llm,
+                    response = await self.client.aio.models.generate_content(
+                        model=self.model_llm,
                         contents=f"Request text: {raw_text}",
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,

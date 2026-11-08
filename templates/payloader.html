@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payloader</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; color: #333; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .upload-card { background: #eef2f7; padding: 20px; border-radius: 6px; margin-bottom: 25px; border: 1px dashed #4a90e2; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: #f8f9fa; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    .high { background-color: #f8d7da; color: #721c24; }
+    .medium { background-color: #fff3cd; color: #856404; }
+    .low { background-color: #d4edda; color: #155724; }
+    pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="upload-card" style="text-align: center;">
+      <h1>Файл обробляється Gemini LLM, треба зачекати.</h1>
+      <p style="color: #666; margin-bottom: 20px;">Натисніть кнопку нижче, щоб перевірити готовність результатів:</p>
+
+      <!-- Кнопка, яка відправляє GET-запит на перевірку -->
+      <form action="/check-status" method="get">
+        <input type="hidden" name="task_id" value="{{ task_id }}">
+        <button type="submit" style="padding: 10px 20px; font-weight: bold; cursor: pointer; background-color: #4a90e2; color: white; border: none; border-radius: 4px;">
+          Перевірити результат
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -5,11 +5,11 @@ from app.schemas import RowSchema, ResultSchema
 
 
 class ProcessorCSV:
+    def __init__(self):
+        self.gemini = RequestGemini()
 
-    @staticmethod
-    async def _worker(record: RowSchema) -> ResultSchema:
-        gemini = RequestGemini()
-        llm_response = await gemini.async_request(record.raw_text)
+    async def _worker(self, record: RowSchema) -> ResultSchema:
+        llm_response = await self.gemini.async_request(record.raw_text)
 
         result = ResultSchema(
             id=record.id,

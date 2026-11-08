@@ -10,8 +10,6 @@ class Reporter:
     def generate_reports(results: List[ResultSchema]) -> Dict[str, Any]:
         clean_results = [result.model_dump(mode="json") for result in results]
 
-        output_json_str = json.dumps(clean_results, ensure_ascii=False, indent=2)
-
         df = pd.DataFrame(clean_results)
 
         by_category = df["category"].value_counts().to_dict()
@@ -65,7 +63,6 @@ class Reporter:
             )
 
         return {
-            "json_data": output_json_str,
             "markdown_report": markdown_report,
             "summary_stats": {
                 "by_category": by_category,
